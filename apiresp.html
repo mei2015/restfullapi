@@ -1,0 +1,94 @@
+
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>API 响应 - RESTful API 一种流行的 API 设计风格</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+    <meta name="keyword" content="RESTful API,REST API,API 设计指南,API 设计风格,API 设计标准">
+    <meta name="description"
+        content="REST 是 Representational State Transfer的缩写，如果一个架构符合REST原则，就称它为RESTful架构，RESTful API 是 HTTP 协议的最佳实践，RESTful API 是一种软件架构风格、设计风格，可以让软件更加清晰，更简洁，更有层次，可维护性更好">
+
+    <link rel="stylesheet" href="https://restfulapi.cn/assets/index/css/style.css">
+
+</head>
+
+<body>
+    <header>
+    <div class="header-container">
+        <a class="logo" href="/">RESTful API</a>
+        <p class="description">一种流行的 API 设计风格</p>
+        <ul class="nav">
+            <li><a href="/">首页</a></li>
+            <li><a href="./api.html">API 请求</a></li>
+            <li><a href="./apiresp.html">API 响应</a></li>
+            <li><a href="./jwt.html">JWT 认证</a></li>
+        </ul>
+    </div>
+    
+</header>
+
+
+
+    <div class="page">
+        <div class="page-title">
+            API 响应
+        </div>
+        <div class="page-content">
+            <h3>一，概述</h3><p>客户端的每一次请求，服务器都必须给出回应。回应包括&nbsp;HTTP 状态码和数据两部分。</p><p>HTTP 状态码就是一个三位数，分成五个类别。</p><pre class="ql-syntax" spellcheck="false">1xx：相关信息
+2xx：操作成功
+3xx：重定向
+4xx：客户端错误
+5xx：服务器错误
+</pre><p>这五大类总共包含100多种状态码，覆盖了绝大部分可能遇到的情况。每一种状态码都有标准的（或者约定的）解释，客户端只需查看状态码，就可以判断出发生了什么情况，所以服务器应该返回尽可能精确的状态码。</p><p><br></p><h3>二，状态码</h3><p><strong>1xx 状态码</strong></p><p>API 不需要1xx状态码，下面介绍其他四类状态码的精确含义。</p><p><br></p><p><strong>2xx 状态码</strong></p><p>200状态码表示操作成功，但是不同的方法可以返回更精确的状态码。</p><pre class="ql-syntax" spellcheck="false">GET:    200 OK
+POST:   201 Created
+PUT:    200 OK
+PATCH:  200 OK
+DELETE: 204 No Content
+</pre><p>上面代码中，POST返回201状态码，表示生成了新的资源；DELETE返回204状态码，表示资源已经不存在。</p><p><br></p><p><strong>3xx 状态码</strong></p><p>API 用不到301状态码（永久重定向）和302状态码（暂时重定向，307也是这个含义），因为它们可以由应用级别返回，浏览器会直接跳转，API 级别可以不考虑这两种情况。</p><p>API 主要是用303 See Other，表示参考另一个 URL。它与302和307的含义一样，也是"暂时重定向"，区别在于302和307用于GET请求，而303用于POST、PUT和DELETE请求。收到303以后，浏览器不会自动跳转，而会让用户自己决定下一步怎么办。下面是一个例子。</p><pre class="ql-syntax" spellcheck="false">HTTP/1.1 303 See Other
+Location: /api/orders/12345
+</pre><p><br></p><p><strong>4xx 状态码</strong></p><p>4xx 状态码表示客户端错误，主要有下面几种：</p><pre class="ql-syntax" spellcheck="false">400 Bad Request：服务器不理解客户端的请求，未做任何处理。
+401 Unauthorized：用户未提供身份验证凭据，或者没有通过身份验证。
+403 Forbidden：用户通过了身份验证，但是不具有访问资源所需的权限。
+404 Not Found：所请求的资源不存在，或不可用。
+405 Method Not Allowed：用户已经通过身份验证，但是所用的 HTTP 方法不在他的权限之内。
+410 Gone：所请求的资源已从这个地址转移，不再可用。
+415 Unsupported Media Type：客户端要求的返回格式不支持。比如，API 只能返回 JSON 格式，但是客户端要求返回 XML 格式。
+422 Unprocessable Entity ：客户端上传的附件无法处理，导致请求失败。
+429 Too Many Requests：客户端的请求次数超过限额。
+</pre><p><br></p><p><strong>5xx 状态码</strong></p><p>5xx状态码表示服务端错误。一般来说，API 不会向用户透露服务器的详细信息，所以只要两个状态码就够了。</p><pre class="ql-syntax" spellcheck="false">500 Internal Server Error：客户端请求有效，服务器处理时发生了意外。
+503 Service Unavailable：服务器无法处理请求，一般用于网站维护状态。
+</pre><p><br></p><p><br></p><h3>三，返回数据</h3><p><strong>3.1 不要返回纯本文</strong></p><p>API 返回的数据格式，不应该是纯文本，而应该是一个 JSON 对象，因为这样才能返回标准的结构化数据。所以，服务器回应的 HTTP 头的Content-Type属性要设为application/json。</p><p>客户端请求时，也要明确告诉服务器，可以接受 JSON 格式，即请求的 HTTP 头的ACCEPT属性也要设成application/json。</p><p><br></p><p><strong>3.2 不要包装数据</strong></p><p>response 的 body直接就是数据，不要做多余的包装。错误实例：</p><pre class="ql-syntax" spellcheck="false">{"success":true, "data":{"id":1, "name":"周伯通"} }
+</pre><p>针对不同操作，服务器向用户返回的结果应该符合以下规范。</p><pre class="ql-syntax" spellcheck="false">GET    /collection：返回资源对象的列表（数组）
+GET    /collection/resource：返回单个资源对象
+POST   /collection：返回新生成的资源对象
+PUT    /collection/resource：返回完整的资源对象
+PATCH  /collection/resource：返回完整的资源对象
+DELETE /collection/resource：返回一个空文档
+</pre><p><br></p><p><strong>3.3 发生错误时，不要返回 200 状态码</strong></p><p>有一种不恰当的做法是，即使发生错误，也返回200状态码，把错误信息放在数据体里面，就像下面这样。</p><pre class="ql-syntax" spellcheck="false">{"status": "failure", "data": { "error": "Expected at least two items in list."} }
+</pre><p>正确的做法是，状态码反映发生的错误，具体的错误信息放在数据体里面返回。下面是一个例子。</p><pre class="ql-syntax" spellcheck="false">HTTP/1.1 400 Bad Request
+Content-Type: application/json
+{
+  "error": "Invalid payoad.",
+  "detail": {
+    "surname": "This field is required."
+  }
+}
+</pre><p><br></p>
+        </div>
+    </div>
+
+
+    <footer>
+    <div class="footer-bottom">
+        <p>
+            <span>&copy; 2021 RESTful API &nbsp;&nbsp;一种流行的 API 设计风格</span>
+        </p>
+    </div>
+</footer>
+
+
+</body>
+
+</html>
